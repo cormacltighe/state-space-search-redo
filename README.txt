@@ -1,5 +1,7 @@
+OLD README
+WILL UPDATE LATER probably
+
 Cormac Tighe
-ctighe@u.rochester.edu
 Project 1
 
 BUILDING:
