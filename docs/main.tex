@@ -1,0 +1,107 @@
+\documentclass{article}
+\usepackage{amsmath,amstext,amssymb}
+\title{Introduction to AI\\Project 1\\State Space Search}
+\author{Cormac Tighe\\ctighe@u.rochester.edu}
+\date{}
+\begin{document}
+\maketitle
+\section{Introduction}
+I found this project very interesting. I had trouble gauging how difficult it would be. I started relatively soon after it was assigned, but I made little progress for a long time.
+I don't know why, but for some reason I found it very difficult to get anything done. I was very indecisive about how to structure the program. I would makke something and then second guess myself a lot.
+Eventually, I did manage to get going and work on it. The majority of the project was completed only a few days before the deadline, which I don't like to do.
+
+\section{Design}
+
+%The project went through numerous design changes and restructurings before I settled on one, so I will only 
+\subsection{Tic-Tac-Toe}
+
+\subsubsection{Game engine}
+
+To represent the game I created a \texttt{board} (a pointer to the actual data structure, \texttt{struct board\_t}) which contains 9 \texttt{char}s, one per cell, a \texttt{char} for representing the win-state, and 
+a 16-bit integer (\texttt{typedef}'d to \texttt{flags}) used as a bit-field indicating which cells are open. In the cells, board represents $x$ as a \texttt{char} with value $1$, $o$ as $2$, and blank as $0$. The win-state indicator
+has the same values, as well as representing a tie as $-1$.
+
+The engine has several functions. They are as follows:
+\begin{description}
+\item[\texttt{init\_board}] --- initialize a new \texttt{board} with the indicated moves
+\item[\texttt{dup\_board}] --- duplicate a \texttt{board}
+\item[\texttt{getpos}] --- return the contents of a cell
+\item[\texttt{setpos}] --- set the contents of a cell
+\item[\texttt{isvalid}] --- return whether the specified cell is empty
+\item[\texttt{setwon}] --- check the \texttt{board} for a winner/tie, set the \texttt{board}'s indicator, and return it
+\item[\texttt{setopens}] --- check the \texttt{board} for open cells, set its indicator, and return it
+\item[\texttt{getmovs}] --- return a \texttt{flags} indicating where the desired player's marks are
+\item[\texttt{countopens}] --- count the number of open cells in a \texttt{board}
+\item[\texttt{countflags}] --- count the number of active bits in a \texttt{flags}
+\item[\texttt{flagdiff}] --- return the index of the first cell where 2 \texttt{flags} differ
+\item[\texttt{canwin}] --- return a \texttt{flags} indicating where the given player could win
+\item[\texttt{print\_board}] --- print the board to \texttt{stderr}
+\end{description}
+
+For more information, see the source code in \texttt{engine.h} and \texttt{engine.c}.
+
+\subsubsection{State space search}
+
+For state space search, I used a recursive function and the Minimax algorithm. I didn't use any depth limit or pruning, because I found that standard tic-tac-toe has a small enough state space to allow for full searches.
+I had originally intended to create an actual tree data structure for the search, but it was troublesome and used an impractical amount of memory. The Minimax algorithm is implemented as two functions.
+One is the recursive state space search itself, and the other is the entry-point for the search. Both functions return a simple \texttt{struct} that indicates the utility of marking a cell. For more details, see the source
+code in \texttt{search.h} and \texttt{search.c}.
+
+\subsubsection{Interface}
+
+The program has a fairly simple user interface. As required, it prints its moves to \texttt{stdout}, takes input from \texttt{stdin}, and prints all other information to \texttt{stderr}.
+
+\subsection{9-Board Tic-Tac-Toe}
+
+\subsubsection{Game engine}
+The game engine for 9-board is very similar to standard tic-tac-toe. A \texttt{struct} is used to represent the board, store the win-state, and store an indicator of open cells. However, it also stores the board
+that the next player must play in, or $-1$ if they may play in any board. The functions are largely equivalent. For more details, see the source code in \texttt{nine.h} and \texttt{nine.c}.
+
+\subsubsection{State space search}
+For 9-board, the basics of the algorithm are the same, but several details differ. Because of the increadibly large state space, I found it necessary to limit the depth of the search. If a call has reached maximum depth
+and is not a terminal state, its value is guessed heuristically. Other than this, the algorithm is the same. %TODO: implement ab pruning
+
+When evaluating a move, I wanted to make sure that a heuristic evaluation would always be "overridden" by the value of a terminal state. To ensure this, I used \texttt{float}s to store utility values.
+All terminal values are integers, either $-1.0,\, 0.0,\, \text{or}\, 1.0$, and all heuristic values are non-integers. I determined the heuristic value of a move by first checking for, if that move were made,
+immediate victory for the player. Next, I looked for whether making a move would allow the other player to immediately win next turn. Finally, I give the "strategic" value of the cell, determined by its position.
+This value gives greater weight to cells based on how many ways the cell can be involved in a win.
+
+%\begin{center}
+%\begin{tabular}{c|c|c}
+%$\frac{2}{6}$ & $\frac{1}{6}$ & $\frac{2}{6}$\\\hline
+%$\frac{2}{6}$ & $\frac{3}{6}$ & $\frac{2}{6}$\\\hline
+%$\frac{2}{6}$ & $\frac{1}{6}$ & $\frac{2}{6}$\\
+%\end{tabular}
+%\end{center}
+\begin{center}
+\begin{tabular}{c|c|c}
+$2/6$ & $1/6$ & $2/6$\\\hline
+$1/6$ & $3/6$ & $1/6$\\\hline
+$2/6$ & $1/6$ & $2/6$\\
+\end{tabular}
+\end{center}
+
+
+These values are weighted in reverse when evaluating for the non-cpu player by the formula $(6.0-Value_{cell})-2.0$.
+
+\subsubsection{Interface}
+
+As with standard tic-tac-toe, the interface if fairly simple. It follows the rules in the project specification about the input and output.
+
+\section{Analysis}
+
+\subsection{Tic-Tac-Toe}
+The program runs very well for standard tic-tac-toe. The game is simple enough that it can guarantee a win or draw. If playing against a program of equal "intelligence," it is guaranteed to tie.
+It runs very quickly, and does not comsume much memory.
+
+\subsection{9-Board Tic-Tac-Toe}
+This part of the program is much slower. The state space is vastly larger, so there are dramatically more moves to search. My Minimax implementation is depth-first, so while it only uses a fairly small
+amount of memory at any one time, the total amount of memory used over the lifetime of the program is still increadibly large.
+
+I implemented simple $\alpha$-$\beta$ pruning to decrease the size of the search tree. This dramatically speeds up the search process.
+
+By default the program searches to a depth of 8, which I find gives good results and speed. The algorithm should only search an even number of levels deep; if searching an odd number of
+levels, it must rely on heuristic predictions about the user's moves, which I believe are not as useful or reliable. Every six moves, three per player, the depth limit is incremented by 2.
+This allows the program to search deeper later in the game, increasing difficulty as time goes on.
+
+\end{document}
